@@ -1,0 +1,30 @@
+# docker-compose for the LiqHawk VPS deployment.
+#
+# Single service — the backend talks to a remote MongoDB via the MONGO_URI in
+# .env (e.g. MongoDB Atlas, a managed cluster, or your own server).
+#
+# Expected files alongside this one on the VPS:
+#   - .env          (production env vars, NOT committed — must include MONGO_URI)
+#
+# Usage on the VPS:
+#   docker compose pull
+#   docker compose up -d
+#
+# GHA logs into GHCR and pulls `liqhawk:latest`; pin to a sha-<commit> tag in
+# `image:` below if you want immutable deploys.
+
+services:
+  liqhawk:
+    image: ghcr.io/drex007/liqhawk:latest
+    container_name: liqhawk
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3).status == 200 else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s

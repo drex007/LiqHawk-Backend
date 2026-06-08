@@ -1,0 +1,363 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_agent",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "inputs": [],
+    "name": "AlreadyRecorded",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidProbability",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NotAgent",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "PredictionWindowOpen",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "UnknownPrediction",
+    "type": "error"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "predictionId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "cascadeOccurred",
+        "type": "bool"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint32",
+        "name": "actualLiquidations",
+        "type": "uint32"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint128",
+        "name": "actualLiquidatedUsd",
+        "type": "uint128"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "reporter",
+        "type": "address"
+      }
+    ],
+    "name": "OutcomeRecorded",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "predictionId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "collateralSymbolHash",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "enum LiquidationCascadeLogger.Severity",
+        "name": "severity",
+        "type": "uint8"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint16",
+        "name": "probabilityBps",
+        "type": "uint16"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint128",
+        "name": "totalDebtUsd",
+        "type": "uint128"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint64",
+        "name": "timestamp",
+        "type": "uint64"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint64",
+        "name": "blockNumber",
+        "type": "uint64"
+      }
+    ],
+    "name": "PredictionLogged",
+    "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "OUTCOME_WINDOW",
+    "outputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "accuracy",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "correct",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "resolved",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "agent",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "predictionId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getPrediction",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint64",
+            "name": "timestamp",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "blockNumber",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint16",
+            "name": "probabilityBps",
+            "type": "uint16"
+          },
+          {
+            "internalType": "enum LiquidationCascadeLogger.Severity",
+            "name": "severity",
+            "type": "uint8"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "collateralSymbolHash",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "numPositions",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint128",
+            "name": "totalDebtUsd",
+            "type": "uint128"
+          },
+          {
+            "internalType": "uint16",
+            "name": "timeToCascadeMin",
+            "type": "uint16"
+          },
+          {
+            "internalType": "bool",
+            "name": "outcomeRecorded",
+            "type": "bool"
+          },
+          {
+            "internalType": "bool",
+            "name": "cascadeOccurred",
+            "type": "bool"
+          },
+          {
+            "internalType": "uint32",
+            "name": "actualLiquidations",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint128",
+            "name": "actualLiquidatedUsd",
+            "type": "uint128"
+          },
+          {
+            "internalType": "uint64",
+            "name": "outcomeBlockNumber",
+            "type": "uint64"
+          },
+          {
+            "internalType": "address",
+            "name": "outcomeReporter",
+            "type": "address"
+          }
+        ],
+        "internalType": "struct LiquidationCascadeLogger.Prediction",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint16",
+        "name": "probabilityBps",
+        "type": "uint16"
+      },
+      {
+        "internalType": "enum LiquidationCascadeLogger.Severity",
+        "name": "severity",
+        "type": "uint8"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "collateralSymbolHash",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint32",
+        "name": "numPositions",
+        "type": "uint32"
+      },
+      {
+        "internalType": "uint128",
+        "name": "totalDebtUsd",
+        "type": "uint128"
+      },
+      {
+        "internalType": "uint16",
+        "name": "timeToCascadeMin",
+        "type": "uint16"
+      }
+    ],
+    "name": "logPrediction",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "predictionId",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "predictionCount",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "collateralSymbolHash",
+        "type": "bytes32"
+      }
+    ],
+    "name": "predictionsByCollateral",
+    "outputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "",
+        "type": "uint256[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "predictionId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bool",
+        "name": "cascadeOccurred",
+        "type": "bool"
+      },
+      {
+        "internalType": "uint32",
+        "name": "actualLiquidations",
+        "type": "uint32"
+      },
+      {
+        "internalType": "uint128",
+        "name": "actualLiquidatedUsd",
+        "type": "uint128"
+      }
+    ],
+    "name": "recordOutcome",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]

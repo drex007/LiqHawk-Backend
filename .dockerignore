@@ -1,0 +1,43 @@
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+*.egg-info
+.pytest_cache
+.cache
+.venv
+venv
+env
+
+# Frontend (built separately or served elsewhere)
+frontend
+
+# Tests + tooling (not needed in image)
+tests
+.ruff_cache
+.mypy_cache
+
+# Local + secrets
+.env
+.env.*
+!.env.example
+*.local
+
+# VCS + editors
+.git
+.gitignore
+.github
+.idea
+.vscode
+.DS_Store
+
+# Build artifacts
+dist
+build
+contracts/out
+
+# Docs / assets not needed at runtime
+*.docx
+*.png
+README.md

@@ -1,0 +1,49 @@
+[project]
+name = "cascade-detector"
+version = "0.1.0"
+description = "Liquidation cascade detector for Mantle — FastAPI + MongoDB"
+requires-python = ">=3.11"
+dependencies = [
+    # --- Web framework ---
+    "fastapi>=0.110.0",            # The HTTP framework
+    "uvicorn[standard]>=0.27.0",   # ASGI server that runs FastAPI
+    "pydantic>=2.5.0",             # Schema validation (FastAPI uses it natively)
+    "pydantic-settings>=2.1.0",    # Loads config from .env into Pydantic models
+
+    # --- MongoDB ---
+    "motor>=3.3.0",                # Async MongoDB driver (built on pymongo, non-blocking)
+    "pymongo>=4.6.0",              # Sync driver — used for indexes and one-off scripts
+
+    # --- Blockchain ---
+    "web3>=6.20.0",                # Ethereum/Mantle RPC client
+    "eth-abi>=5.0.0",              # ABI encoding/decoding
+
+    # --- Reliability + observability ---
+    "tenacity>=8.2.0",             # Retry decorator for flaky RPC calls
+    "structlog>=24.1.0",           # JSON-structured logging
+    "httpx>=0.27.0",               # Async HTTP client (for Discord/Telegram alerts later)
+
+    # --- Solidity compilation + deployment ---
+    "py-solc-x>=2.0.0",            # Compiles LiquidationCascadeLogger.sol
+]
+
+[project.optional-dependencies]
+ml = [
+    "numpy>=1.26.0",
+    "pandas>=2.1.0",
+    "scikit-learn>=1.4.0",
+]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "mongomock-motor>=0.0.21",     # In-memory Mongo for tests — no real DB needed
+    "ruff>=0.3.0",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
