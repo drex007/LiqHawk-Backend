@@ -37,6 +37,12 @@ WORKDIR /app
 # Copy the pre-built venv + source from the builder stage.
 COPY --from=builder --chown=app:app /app /app
 
+# WORKDIR created /app as root; the COPY above only chowns the copied *contents*,
+# so the /app dir itself stays root-owned and `app` can't create new entries in
+# it. Hand the workdir to `app` and pre-create the runtime cache dir it writes to
+# (.cache/lendle_borrowers.json — see app/services/lendle.py).
+RUN chown app:app /app && mkdir -p /app/.cache && chown app:app /app/.cache
+
 # Put the venv first on PATH so `python` and `uvicorn` resolve to it.
 ENV PATH="/app/.venv/bin:${PATH}" \
     PYTHONDONTWRITEBYTECODE=1 \
