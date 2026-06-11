@@ -88,7 +88,7 @@ class Settings(BaseSettings):
     mantle_sepolia_rpc: str = "https://rpc.sepolia.mantle.xyz"
 
     # Polling
-    poll_interval_seconds: int = 30
+    poll_interval_seconds: int = 120
     max_positions_per_cycle: int = 0  # 0 = unlimited
 
     # --- Cascade detection ---
@@ -117,7 +117,10 @@ class Settings(BaseSettings):
     telegram_chat_id: str = ""  # channels usually negative, e.g. "-1001234567890"
 
     # --- Phase 4: on-chain logger ---
-    sepolia_deployer_private_key: str = ""  # empty = on-chain logging disabled
+    # Network-neutral signing key. Falls back to the legacy
+    # SEPOLIA_DEPLOYER_PRIVATE_KEY name for backward compatibility.
+    logger_private_key: str = ""
+    sepolia_deployer_private_key: str = ""  # legacy alias; prefer LOGGER_PRIVATE_KEY
     cascade_logger_address: str = ""  # set after deployment
 
     # MongoDB
@@ -141,6 +144,11 @@ class Settings(BaseSettings):
     @property
     def chain_id(self) -> int:
         return 5000 if self.mantle_network == "mainnet" else 5003
+
+    @property
+    def deployer_private_key(self) -> str:
+        """Signing key for on-chain logging — new name wins, legacy as fallback."""
+        return self.logger_private_key or self.sepolia_deployer_private_key
 
     @property
     def init_addresses(self) -> InitCapitalAddresses:

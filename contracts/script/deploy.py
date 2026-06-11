@@ -65,8 +65,8 @@ def _compile() -> tuple[str, list[dict]]:
 
 def main() -> int:
     settings = get_settings()
-    if not settings.sepolia_deployer_private_key:
-        print("ERROR: SEPOLIA_DEPLOYER_PRIVATE_KEY not set in .env", file=sys.stderr)
+    if not settings.deployer_private_key:
+        print("ERROR: LOGGER_PRIVATE_KEY not set in .env", file=sys.stderr)
         return 1
 
     print(f"Compiling {CONTRACT_PATH.name} with solc {SOLC_VERSION}...")
@@ -79,17 +79,16 @@ def main() -> int:
         return 1
     print(f"Connected to network={settings.mantle_network} chain_id={w3.eth.chain_id}")
 
-    acct = w3.eth.account.from_key(settings.sepolia_deployer_private_key)
+    acct = w3.eth.account.from_key(settings.deployer_private_key)
     balance_wei = w3.eth.get_balance(acct.address)
     print(f"Deployer: {acct.address}")
     print(f"Balance:  {w3.from_wei(balance_wei, 'ether')} (native)")
     if balance_wei == 0:
-        print(
-            "ERROR: deployer balance is 0. Fund it from the Mantle Sepolia faucet:",
-            "  https://faucet.sepolia.mantle.xyz",
-            sep="\n",
-            file=sys.stderr,
-        )
+        if settings.mantle_network == "mainnet":
+            hint = "Fund the deployer with real MNT on Mantle mainnet for gas."
+        else:
+            hint = "Fund it from the Mantle Sepolia faucet:\n  https://faucet.sepolia.mantle.xyz"
+        print(f"ERROR: deployer balance is 0. {hint}", file=sys.stderr)
         return 1
 
     contract = w3.eth.contract(abi=abi, bytecode=bin_hex)

@@ -50,7 +50,7 @@ class OnChainLogger:
     def __init__(self, settings: Settings):
         self.settings = settings
         self.enabled = bool(
-            settings.sepolia_deployer_private_key
+            settings.deployer_private_key
             and settings.cascade_logger_address
         )
         if not self.enabled:
@@ -61,13 +61,11 @@ class OnChainLogger:
                 f"ABI not found at {ABI_PATH}. Run contracts/script/deploy.py first."
             )
 
-        # Sepolia / mainnet use different RPC URLs. The logger lives on
-        # *Sepolia* in our setup — Mantle Sepolia for cheap testnet logging.
-        # The reader still runs against mainnet INIT.
-        rpc_url = settings.mantle_sepolia_rpc
-        self.w3 = Web3(Web3.HTTPProvider(rpc_url, request_kwargs={"timeout": 30}))
+        # RPC + chain id follow MANTLE_NETWORK (see Settings.rpc_url / chain_id),
+        # so the logger writes to whichever chain the rest of the app reads.
+        self.w3 = Web3(Web3.HTTPProvider(settings.rpc_url, request_kwargs={"timeout": 30}))
         self.w3.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)
-        self.account = self.w3.eth.account.from_key(settings.sepolia_deployer_private_key)
+        self.account = self.w3.eth.account.from_key(settings.deployer_private_key)
 
         abi = json.loads(ABI_PATH.read_text())
         self.contract = self.w3.eth.contract(
@@ -146,7 +144,7 @@ class OnChainLogger:
             "nonce": nonce,
             "gas": int(gas_estimate * 1.2),
             "gasPrice": gas_price,
-            "chainId": 5003,  # Mantle Sepolia
+            "chainId": self.settings.chain_id,  # 5000 mainnet / 5003 sepolia
         })
         signed = self.account.sign_transaction(tx)
         tx_hash = self.w3.eth.send_raw_transaction(signed.raw_transaction)
