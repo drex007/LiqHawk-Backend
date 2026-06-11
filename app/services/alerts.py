@@ -43,6 +43,10 @@ SEVERITY_COLORS = {
     "LOW": 0x95A5A6,        # grey
 }
 
+# Ordering of position risk tiers (from app/core/schema.py risk_level), worst
+# last. A position "worsens" when its rank increases. SAFE never alerts.
+_SEVERITY_RANK = {"SAFE": 0, "MEDIUM": 1, "HIGH": 2, "CRITICAL": 3}
+
 
 @dataclass
 class _DedupEntry:
@@ -119,32 +123,39 @@ class AlertPublisher:
             log.info("alerts_sent", kind="cascade_zone", count=sent)
         return sent
 
-    async def publish_new_critical_positions(
+    async def publish_new_at_risk_positions(
         self,
         previous: dict[str, str],
         current: Sequence[Position],
         *,
         block_number: int,
+        min_severity: str = "MEDIUM",
     ) -> int:
-        """Alert on positions that crossed into CRITICAL since last snapshot.
+        """Alert on positions that *worsened* into an alertable tier.
 
-        `previous` maps position_id → prior risk_level. Positions absent from
-        the previous map are treated as new — alert if currently CRITICAL.
+        A position alerts when its risk tier is at least `min_severity` AND it
+        is strictly worse than last snapshot — so SAFE→MEDIUM, MEDIUM→HIGH and
+        HIGH→CRITICAL each fire one labeled alert, but a position holding the
+        same tier stays quiet. `previous` maps position_id → prior risk_level;
+        positions absent from it are treated as previously SAFE (newly seen).
         """
+        floor = _SEVERITY_RANK.get(min_severity, _SEVERITY_RANK["MEDIUM"])
         sent = 0
         for pos in current:
-            if pos.risk_level != "CRITICAL":
-                continue
-            prior = previous.get(pos.position_id)
-            if prior == "CRITICAL":
-                continue  # was already critical — already alerted last cycle
-            fp = f"position:{pos.position_id}:CRITICAL"
-            if not self._dedup_admit(fp, "CRITICAL"):
+            cur = pos.risk_level
+            cur_rank = _SEVERITY_RANK.get(cur, 0)
+            if cur_rank < floor:
+                continue  # not severe enough to alert (includes SAFE)
+            prior_rank = _SEVERITY_RANK.get(previous.get(pos.position_id, "SAFE"), 0)
+            if cur_rank <= prior_rank:
+                continue  # unchanged or improving — only alert on worsening
+            fp = f"position:{pos.position_id}:{cur}"
+            if not self._dedup_admit(fp, cur):
                 continue
             await self._post_embed(self._position_embed(pos, block_number))
             sent += 1
         if sent:
-            log.info("alerts_sent", kind="new_critical", count=sent)
+            log.info("alerts_sent", kind="position_risk", count=sent)
         return sent
 
     # --- Embed builders ------------------------------------------------------
@@ -195,13 +206,22 @@ class AlertPublisher:
         }
 
     def _position_embed(self, pos: Position, block_number: int) -> dict:
+        severity = pos.risk_level
+        # CRITICAL means HF < 1.0 (already liquidatable); HIGH/MEDIUM are early
+        # warnings — word the line accordingly.
+        if severity == "CRITICAL":
+            status = "is now liquidatable"
+            icon = "\U0001F525"  # 🔥
+        else:
+            status = "is approaching liquidation"
+            icon = "⚠️"  # ⚠️
         return {
-            "title": "\U0001F525 Position entered CRITICAL risk",
+            "title": f"{icon} Position entered {severity} risk",
             "description": (
                 f"Position `{pos.position_id[:20]}...` owned by `{pos.owner}` "
-                f"is now liquidatable (HF = {float(pos.health_factor):.4f})."
+                f"{status} (HF = {float(pos.health_factor):.4f})."
             ),
-            "color": SEVERITY_COLORS["CRITICAL"],
+            "color": SEVERITY_COLORS.get(severity, SEVERITY_COLORS["MEDIUM"]),
             "fields": [
                 {"name": "Health factor", "value": f"{float(pos.health_factor):.4f}", "inline": True},
                 {"name": "Dominant collateral",

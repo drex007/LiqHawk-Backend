@@ -178,11 +178,12 @@ class CascadePoller:
             zones, block_number=snapshot.block_number
         )
 
-        # Send per-position CRITICAL crossings
-        await self.alerts.publish_new_critical_positions(
+        # Send per-position risk-escalation alerts (MEDIUM/HIGH/CRITICAL crossings)
+        await self.alerts.publish_new_at_risk_positions(
             previous=self._last_risk,
             current=snapshot.positions,
             block_number=snapshot.block_number,
+            min_severity=self.settings.alert_min_severity,
         )
         self._last_risk = {p.position_id: p.risk_level for p in snapshot.positions}
 

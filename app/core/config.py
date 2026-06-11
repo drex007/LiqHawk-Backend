@@ -109,6 +109,11 @@ class Settings(BaseSettings):
     # --- Alerts ---
     discord_webhook_url: str = ""  # empty = alerts disabled, code still runs
     alert_dedup_window_seconds: int = 600
+    # Least-severe per-position tier that triggers an alert. A position alerts
+    # when it *worsens* into this tier or below. Order: MEDIUM < HIGH < CRITICAL.
+    # Default MEDIUM = warn early, before liquidation. Set CRITICAL for the old
+    # "only when liquidatable" behavior.
+    alert_min_severity: str = "MEDIUM"
 
     # Telegram is a parallel channel — leave token blank to disable. Discord
     # and Telegram dedup share the same in-process state, so a deduped alert

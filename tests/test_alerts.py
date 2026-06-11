@@ -91,7 +91,7 @@ async def test_no_webhook_url_is_noop(fake_client):
 
 async def test_publish_new_critical_position(publisher, fake_client):
     p = _mk("1", "0.98")
-    sent = await publisher.publish_new_critical_positions(
+    sent = await publisher.publish_new_at_risk_positions(
         previous={},  # never seen before
         current=[p],
         block_number=100,
@@ -102,7 +102,7 @@ async def test_publish_new_critical_position(publisher, fake_client):
 
 async def test_already_critical_position_not_realerted(publisher, fake_client):
     p = _mk("1", "0.98")
-    sent = await publisher.publish_new_critical_positions(
+    sent = await publisher.publish_new_at_risk_positions(
         previous={"1": "CRITICAL"},  # was critical last cycle too
         current=[p],
         block_number=100,
@@ -112,16 +112,63 @@ async def test_already_critical_position_not_realerted(publisher, fake_client):
 
 async def test_position_dedup_suppresses_within_window(publisher, fake_client):
     p = _mk("1", "0.98")
-    await publisher.publish_new_critical_positions(
+    await publisher.publish_new_at_risk_positions(
         previous={"1": "HIGH"},
         current=[p],
         block_number=100,
     )
     # Re-emit — fingerprint already in dedup set
-    sent = await publisher.publish_new_critical_positions(
+    sent = await publisher.publish_new_at_risk_positions(
         previous={"1": "HIGH"},
         current=[p],
         block_number=101,
+    )
+    assert sent == 0
+
+
+async def test_new_medium_position_alerts(publisher, fake_client):
+    # HF 1.10 → MEDIUM band (1.05–1.15). Newly seen → should alert by default.
+    p = _mk("1", "1.10")
+    sent = await publisher.publish_new_at_risk_positions(
+        previous={},
+        current=[p],
+        block_number=100,
+    )
+    assert sent == 1
+    assert "MEDIUM" in fake_client.posts[0][1]["embeds"][0]["title"].upper()
+
+
+async def test_escalation_medium_to_high_realerts(publisher, fake_client):
+    # Worsening from MEDIUM to HIGH is a new crossing → alert with HIGH label.
+    p = _mk("1", "1.02")  # HIGH band (1.0–1.05)
+    sent = await publisher.publish_new_at_risk_positions(
+        previous={"1": "MEDIUM"},
+        current=[p],
+        block_number=100,
+    )
+    assert sent == 1
+    assert "HIGH" in fake_client.posts[0][1]["embeds"][0]["title"].upper()
+
+
+async def test_improving_position_does_not_alert(publisher, fake_client):
+    # HIGH → MEDIUM is an improvement; must NOT alert.
+    p = _mk("1", "1.10")  # MEDIUM
+    sent = await publisher.publish_new_at_risk_positions(
+        previous={"1": "HIGH"},
+        current=[p],
+        block_number=100,
+    )
+    assert sent == 0
+
+
+async def test_min_severity_critical_skips_medium(publisher, fake_client):
+    # With floor=CRITICAL, a MEDIUM position is below the bar → no alert.
+    p = _mk("1", "1.10")
+    sent = await publisher.publish_new_at_risk_positions(
+        previous={},
+        current=[p],
+        block_number=100,
+        min_severity="CRITICAL",
     )
     assert sent == 0
 
