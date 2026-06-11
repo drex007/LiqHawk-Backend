@@ -35,7 +35,10 @@ tests
 # Build artifacts
 dist
 build
-contracts/out
+# Ignore compiled contract artifacts EXCEPT the ABI, which the on-chain logger
+# loads at runtime (app/services/on_chain_logger.py). The .bin is deploy-only.
+contracts/out/*
+!contracts/out/LiquidationCascadeLogger.abi.json
 
 # Docs / assets not needed at runtime
 *.docx
