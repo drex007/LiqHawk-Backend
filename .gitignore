@@ -8,5 +8,5 @@ __pycache__/
 .mypy_cache/
 .DS_Store
 #!
-*.log!!!
+*.log
 .env.prod
