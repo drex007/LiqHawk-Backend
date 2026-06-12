@@ -93,6 +93,36 @@ async def at_risk(
     return await repo.get_current_at_risk(db, min_risk=min_risk)
 
 
+@router.get("/recent")
+async def recent_positions(
+    db: Annotated[AsyncIOMotorDatabase, Depends(get_db)],
+    limit: int = Query(100, ge=1, le=500),
+) -> dict:
+    """Last N position records across ALL cycles, newest first, each with its block.
+
+    Spans multiple blocks (unlike /by-risk, which is the latest snapshot only),
+    so the same wallet can appear several times at different blocks. Useful for a
+    rolling "recent activity" feed.
+    """
+    docs = await repo.list_recent_positions(db, limit=limit)
+    items = [
+        {
+            "block_number": d.get("block_number"),
+            "captured_at": d.get("captured_at"),
+            "position_id": d["position_id"],
+            "protocol": d.get("protocol", "init"),
+            "owner": d["owner"],
+            "health_factor": d["health_factor"],
+            "risk_level": d.get("risk_level"),
+            "dominant_collateral": d.get("dominant_collateral"),
+            "total_collateral_usd": d["total_collateral_usd"],
+            "total_debt_usd": d["total_debt_usd"],
+        }
+        for d in docs
+    ]
+    return {"limit": limit, "count": len(items), "positions": items}
+
+
 @router.get("/{position_id}/history", response_model=list[Position])
 async def position_history(
     position_id: str,

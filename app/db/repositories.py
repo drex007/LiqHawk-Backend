@@ -96,6 +96,24 @@ async def list_snapshots(
     return await cursor.to_list(length=limit)
 
 
+async def list_recent_positions(
+    db: AsyncIOMotorDatabase,
+    limit: int = 100,
+) -> list[dict[str, Any]]:
+    """Most recently captured position records across ALL cycles, newest first.
+
+    Unlike get_current_at_risk (which is the latest snapshot only), this spans
+    blocks — so the same wallet can appear multiple times at different blocks,
+    and each returned row carries its own block_number / captured_at.
+    """
+    cursor = (
+        db.positions.find({})
+        .sort("captured_at", -1)
+        .limit(limit)
+    )
+    return await cursor.to_list(length=limit)
+
+
 # ---------------------------------------------------------------------------
 # Position reads
 # ---------------------------------------------------------------------------
