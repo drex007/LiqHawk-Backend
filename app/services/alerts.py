@@ -165,15 +165,15 @@ class AlertPublisher:
         prob_pct = zone.probability * 100
 
         # Build the top-N most-critical address listing. zone.positions is
-        # already sorted by HF ascending. Discord field values max at 1024
-        # chars — we cap at 8 entries (~70 chars each) to stay well under.
+        # already sorted by HF ascending. Full owner addresses (42 chars) so
+        # users can match their own wallet. Discord field values max at 1024
+        # chars — 8 entries × ~75 chars stays well under.
         TOP_N = 8
         top = zone.positions[:TOP_N]
         lines = []
         for p in top:
-            owner_short = f"{p.owner[:6]}…{p.owner[-4:]}"
             lines.append(
-                f"`{owner_short}` HF={float(p.health_factor):.3f} "
+                f"`{p.owner}` HF={float(p.health_factor):.3f} "
                 f"debt=${float(p.total_debt_usd):,.0f} [{p.protocol}]"
             )
         if zone.num_positions > TOP_N:
