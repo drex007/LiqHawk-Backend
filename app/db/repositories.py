@@ -13,6 +13,7 @@ Convention:
 
 from __future__ import annotations
 
+import re
 from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Any
@@ -99,15 +100,24 @@ async def list_snapshots(
 async def list_recent_positions(
     db: AsyncIOMotorDatabase,
     limit: int = 100,
+    owner: str | None = None,
 ) -> list[dict[str, Any]]:
     """Most recently captured position records across ALL cycles, newest first.
 
     Unlike get_current_at_risk (which is the latest snapshot only), this spans
     blocks — so the same wallet can appear multiple times at different blocks,
     and each returned row carries its own block_number / captured_at.
+
+    Pass `owner` to filter to a single wallet (case-insensitive exact match) —
+    useful for "show me this wallet's history across blocks".
     """
+    query: dict[str, Any] = {}
+    if owner:
+        # Stored owners are checksummed mixed-case; match case-insensitively so
+        # callers can pass any casing. Anchored + escaped = exact, safe match.
+        query["owner"] = {"$regex": f"^{re.escape(owner)}$", "$options": "i"}
     cursor = (
-        db.positions.find({})
+        db.positions.find(query)
         .sort("captured_at", -1)
         .limit(limit)
     )
