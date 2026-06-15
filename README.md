@@ -229,8 +229,8 @@ curl http://localhost:8000/positions/1043/history | jq
 Edit `.env`:
 
 ```bash
-MANTLE_NETWORK=mainnet   # default — real positions, read-only
-MANTLE_NETWORK=sepolia   # for the Solidity logger phase
+MANTLE_NETWORK=mainnet   # default — real positions; logger writes to mainnet
+MANTLE_NETWORK=sepolia   # testnet — reads + logger both on Sepolia
 ```
 
 Restart the server. That's it.
@@ -332,17 +332,26 @@ If `DISCORD_WEBHOOK_URL` is empty, the pipeline still runs — alerts are just l
 
 ---
 
-## On-chain prediction logger (Mantle Sepolia)
+## On-chain prediction logger
 
 The contract at `contracts/src/LiquidationCascadeLogger.sol` is an append-only log of cascade predictions + their later-observed outcomes. Anyone can call `accuracy()` to read the agent's track record.
 
-### Deploy
+**Live deployment (Mantle mainnet):**
 
-1. Get test MNT from [Mantle Sepolia faucet](https://faucet.sepolia.mantle.xyz).
+| | |
+| ------------- | ------------------------------------------------------------ |
+| Contract      | [`0x554E92794cb92cc4058a23BD0F7f7e9C6497f2B5`](https://explorer.mantle.xyz/address/0x554E92794cb92cc4058a23BD0F7f7e9C6497f2B5) |
+| Network       | Mantle mainnet (chain id 5000)                               |
+
+The logger follows `MANTLE_NETWORK` — it writes to whichever chain the rest of the app reads (see `Settings.rpc_url` / `chain_id`). Set it to `sepolia` to log on testnet instead.
+
+### Deploy your own
+
+1. Fund the deployer wallet — real MNT on Mantle mainnet, or test MNT from the [Mantle Sepolia faucet](https://faucet.sepolia.mantle.xyz) if `MANTLE_NETWORK=sepolia`.
 2. Add to `.env`:
    ```bash
-   MANTLE_NETWORK=sepolia
-   SEPOLIA_DEPLOYER_PRIVATE_KEY=0x...  # throwaway key, never your real one
+   MANTLE_NETWORK=mainnet
+   LOGGER_PRIVATE_KEY=0x...  # signs logPrediction txs; becomes the contract's agent
    ```
 3. Run:
    ```bash
@@ -352,6 +361,6 @@ The contract at `contracts/src/LiquidationCascadeLogger.sol` is an append-only l
    ```bash
    CASCADE_LOGGER_ADDRESS=0x...
    ```
-5. Set `MANTLE_NETWORK=mainnet` again — the reader watches mainnet INIT, but the logger writes to Sepolia. Restart the app.
+5. Restart the app.
 
-The poller will now submit one `logPrediction` tx per cascade zone per cycle. Failures are logged and don't block the pipeline.
+The poller will now submit one `logPrediction` tx per cascade zone per cycle. The signing key must match the contract's `agent` (the deployer) or writes revert with `NotAgent`. Failures are logged and don't block the pipeline.
